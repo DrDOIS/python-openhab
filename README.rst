@@ -82,7 +82,7 @@ Example usage of the library:
     item.has_associated_thing()
     
     # get thing and check if it is online
-    thing = item.get_associate_thing()
+    thing = item.get_associated_thing()
     thing.is_online()
     
     
