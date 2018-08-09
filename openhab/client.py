@@ -23,6 +23,7 @@
 import requests
 from requests.auth import HTTPBasicAuth
 from .items import Item, DateTimeItem, SwitchItem, NumberItem, ContactItem
+from .things import Thing
 import warnings
 import typing
 
@@ -149,6 +150,24 @@ class OpenHAB:
 
     return items
 
+  # fetch all things
+  def fetch_all_things(self) -> dict:
+    """Returns all things defined in openHAB
+
+    Returns:
+      dict: Returns a dict with the UID as key and item class instances as value.
+            (The UID is the bottom line of each thing shown in the paper-ui)
+    """
+    things = {}  # type: dict
+    thing_list = self.req_get('/things/')
+
+    for thing in thing_list:
+      thing_id = thing['UID']
+      if not thing_id in things:
+        things[thing_id] = self.json_to_thing(thing)
+
+    return things
+
   def get_item(self, name: str) -> Item:
     """Returns an item with its state and type as fetched from openHAB
 
@@ -183,6 +202,18 @@ class OpenHAB:
       return NumberItem(self, json_data)
     else:
       return Item(self, json_data)
+
+  def json_to_thing(self, json_data: dict) -> Thing:
+    """This method takes as argument the RAW (JSON decoded) response for an openHAB
+    thing. It returns a class instance of the specific thing filled with the things data.
+
+    Args:
+      json_data (dict): The JSON decoded data as returned by the openHAB server.
+
+    Returns:
+      Thing: A Thing class instance with the data of the thing.
+    """
+    return Thing(self, json_data)
 
   def get_item_raw(self, name: str) -> typing.Any:
     """Private method for fetching a json configuration of an item.

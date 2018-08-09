@@ -131,6 +131,30 @@ class Item:
 
     self.openhab.req_post('/items/' + self.name, data=v)
 
+  def has_associated_thing(self, thing_list = None):
+    if thing_list is None:
+      thing_list = self.openhab.fetch_all_things()
+
+    for thing_name, values in thing_list.items():
+      if self.name in values.associated_items:
+        return True
+
+    return False
+
+
+  def get_associated_thing(self, thing_list = None):
+    if thing_list is None:
+      thing_list = self.openhab.fetch_all_things()
+
+    for thing_name in thing_list:
+      thing = thing_list[thing_name]
+      if self.name in thing.associated_items:
+        return thing
+
+    raise KeyError()
+
+
+
 
 class DateTimeItem(Item):
   """DateTime item type"""

@@ -28,16 +28,18 @@ openhab = openhab.OpenHAB(base_url)
 # fetch all items
 items = openhab.fetch_all_items()
 
-# fetch other items, show how to toggle a switch
-sunset = items.get('Sunset')
-sunrise = items.get('Sunrise')
-knx_day_night = items.get('KNX_day_night')
+# fetch all things
+things = openhab.fetch_all_things()
 
-now = datetime.datetime.now(datetime.timezone.utc)
+# print all items which get data from things that are offline
+for item_name in items:
 
-if now > sunrise.state and now < sunset.state:
-  knx_day_night.on()
-else:
-  knx_day_night.off()
+    item_instance = items[item_name]
+    if item_instance.has_associated_thing():
+        thing = item_instance.get_associated_thing()
 
-print(knx_day_night.state)
+        if not thing.is_online():
+            print("Item " + item_instance.name + " has offline thing. (" + thing.name + ")")
+
+
+

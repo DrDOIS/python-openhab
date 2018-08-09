@@ -60,6 +60,9 @@ Example usage of the library:
     # fetch all items
     items = openhab.fetch_all_items()
     
+    # fetch all things
+    things = openhab.fetch_all_things()
+        
     sunset = items.get('Sunset')
     print(sunset.state)
 
@@ -74,3 +77,14 @@ Example usage of the library:
 
     # send a command
     item.command('ON')
+    
+    # check if item gets data from a thing
+    item.has_associated_thing()
+    
+    # get thing and check if it is online
+    thing = item.get_associate_thing()
+    thing.is_online()
+    
+    
+    
+    
