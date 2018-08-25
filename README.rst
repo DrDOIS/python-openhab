@@ -1,19 +1,4 @@
-.. image:: https://landscape.io/github/sim0nx/python-openhab/master/landscape.svg?style=flat
-   :target: https://landscape.io/github/sim0nx/python-openhab/master
-   :alt: Code Health
-
-.. image:: https://api.codacy.com/project/badge/Grade/c9f4e32e536f4150a8e7e18039f8f102
-   :target: https://www.codacy.com/app/sim0nx/python-openhab?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=sim0nx/python-openhab&amp;utm_campaign=Badge_Grade
-   :alt: Codacy badge
-
-.. image:: https://readthedocs.org/projects/python-openhab/badge/?version=latest
-   :target: http://python-openhab.readthedocs.io/en/latest/?badge=latest
-   :alt: Documentation Status
-
-.. image:: https://badge.fury.io/py/python-openhab.svg
-   :target: https://badge.fury.io/py/python-openhab
-   :alt: pypi version
-
+[WIP]
 
 python library for accessing the openHAB REST API
 =================================================
@@ -28,22 +13,13 @@ Requirements
   - python :: dateutil
   - python :: requests
   - python :: typing
+  - TODO
 
 Note on openHAB1:
 -----------------
 
 The current version is focused on OpenHAB 2.x; OpenHAB 1.x might still work, though this is not tested. If you require
 older OpenHAB support, please use an older version of this library.
-
-Installation
-------------
-
-Install the latest version using pip:
-
-.. code-block:: bash
-
-  pip install python-openhab
-
 
 Example
 -------
@@ -85,6 +61,25 @@ Example usage of the library:
     thing = item.get_associated_thing()
     thing.is_online()
     
+    
+    
+Rule engine
+------------
+[WIP] There might be breaking changes!
+
+The rule engine offers a way to define rules with the OpenHAB like 'when', 'then' structure.
+I extended this functionality with the two functions 'setup' and 'test'.
+
+'setup' is the place where you can setup all the items that shall interact in the rule.
+You may also define which actions (changes and commands) should trigger the rule.
+
+In the 'when' function you may want to evaluate certain conditions on which the execution of 'then' depends.
+
+The 'test' function offers the possibility to validate the result of the actions performed, e.g:
+A light was switched on in the rule, so a lightsensor should read different values.
+
+The rule engine depends on the mqtt-eventbus to receive updates from OpenHAB (better than continuous polling over REST).
+
     
     
     
