@@ -22,8 +22,9 @@
 
 import requests
 from requests.auth import HTTPBasicAuth
-from .items import Item, DateTimeItem, SwitchItem, NumberItem, ContactItem
+from .items import Item, DateTimeItem, SwitchItem, NumberItem, ContactItem, DimmerItem
 from .things import Thing
+from .rule_controller import RuleController
 import warnings
 import typing
 
@@ -54,6 +55,8 @@ class OpenHAB:
     """
     self.base_url = base_url
 
+    self.openhab_items = {}
+
     self.session = requests.Session()
     self.session.headers['accept'] = 'application/json'
 
@@ -61,6 +64,8 @@ class OpenHAB:
       self.session.auth = http_auth
     elif not(username is None or password is None):
       self.session.auth = HTTPBasicAuth(username, password)
+
+    self.rule_controller = RuleController(self)
 
   @staticmethod
   def _check_req_return(req: requests.Response) -> None:
@@ -148,7 +153,17 @@ class OpenHAB:
       if not i['name'] in items:
         items[i['name']] = self.json_to_item(i)
 
+
+    if not self.openhab_items:
+      self.openhab_items = items
+
     return items
+
+  def update_all_items(self):
+    # Updates all item instances
+    for item_name, value in self.openhab_items.items():
+      self.get_item(item_name) # the instance is updated in the background
+
 
   # fetch all things
   def fetch_all_things(self) -> dict:
@@ -178,8 +193,11 @@ class OpenHAB:
       Item: A corresponding Item class instance with the state of the requested item.
     """
     json_data = self.get_item_raw(name)
+    item = self.json_to_item(json_data)
 
-    return self.json_to_item(json_data)
+    if not name in self.openhab_items:
+      self.openhab_items[name] = item
+    return item
 
   def json_to_item(self, json_data: dict) -> Item:
     """This method takes as argument the RAW (JSON decoded) response for an openHAB
@@ -200,6 +218,8 @@ class OpenHAB:
       return ContactItem(self, json_data)
     elif json_data['type'] == 'Number':
       return NumberItem(self, json_data)
+    elif json_data['type'] == 'Dimmer':
+      return DimmerItem(self, json_data)
     else:
       return Item(self, json_data)
 
@@ -211,7 +231,7 @@ class OpenHAB:
       json_data (dict): The JSON decoded data as returned by the openHAB server.
 
     Returns:
-      Thing: A Thing class instance with the data of the thing.
+      Thing: A Thing class instance with the data of the thing.+
     """
     return Thing(self, json_data)
 
@@ -225,6 +245,9 @@ class OpenHAB:
       dict: A JSON decoded dict.
     """
     return self.req_get('/items/{}'.format(name))
+
+  def get_rule_controller(self):
+    return self.rule_controller
 
 
 class openHAB(OpenHAB):

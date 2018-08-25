@@ -236,6 +236,31 @@ class NumberItem(Item):
     return str(value)
 
 
+class DimmerItem(Item):
+  types = [openhab.types.PercentType]
+
+  def _parse_rest(self, value):
+    """Parse a REST result into a native object
+
+    Args:
+      value (str): A string argument to be converted into a int object.
+
+    Returns:
+      int: The int object as converted from the string parameter.
+    """
+    return int(value)
+
+  def _rest_format(self, value):
+    """Format a value before submitting to openHAB
+
+    Args:
+      value (int): A int argument to be converted into a string.
+
+    Returns:
+      str: The string as converted from the int parameter.
+    """
+    return str(value)
+
 class ContactItem(Item):
   """Contact item type"""
   types = [openhab.types.OpenCloseType]

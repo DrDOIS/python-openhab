@@ -22,7 +22,13 @@
 import datetime
 import openhab
 
-base_url = 'http://localhost:8080/rest'
+import openhab.mqtt_client
+from test_rule import TestRule
+from rule_light_bedroom import LightBedroomRule
+
+base_url = 'http://192.168.10.6:8080/rest'
+
+
 openhab = openhab.OpenHAB(base_url)
 
 # fetch all items
@@ -32,14 +38,27 @@ items = openhab.fetch_all_items()
 things = openhab.fetch_all_things()
 
 # print all items which get data from things that are offline
-for item_name in items:
+# for item_name in items:
+#
+#     item_instance = items[item_name]
+#     if item_instance.has_associated_thing():
+#         thing = item_instance.get_associated_thing()
+#
+#         if not thing.is_online():
+#             print("Item " + item_instance.name + " has offline thing. (" + thing.name + ")")
 
-    item_instance = items[item_name]
-    if item_instance.has_associated_thing():
-        thing = item_instance.get_associated_thing()
-
-        if not thing.is_online():
-            print("Item " + item_instance.name + " has offline thing. (" + thing.name + ")")
+print("Testing ruleController...")
 
 
+# test rule controller
+ruco = openhab.get_rule_controller()
 
+statePublishTopic="home/eventBus/state/${item}"
+commandPublishTopic="home/eventBus/command/${item}"
+ruco.enable_mqtt_client("192.168.10.6", 1883, statePublishTopic, commandPublishTopic)
+
+
+ruco.register_rule(TestRule())
+ruco.register_rule(LightBedroomRule())
+
+ruco.run()
