@@ -231,7 +231,7 @@ class OpenHAB:
       json_data (dict): The JSON decoded data as returned by the openHAB server.
 
     Returns:
-      Thing: A Thing class instance with the data of the thing.+
+      Thing: A Thing class instance with the data of the thing.
     """
     return Thing(self, json_data)
 

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
+import threading
 import time
-import sys
+import datetime
 
-
-import openhab.rule as Rule
+from openhab.rule import Rule
 import openhab.mqtt_client as mqtt
 
 class Condition:
@@ -24,14 +24,14 @@ class Condition:
 
 
 class RuleController:
+    rule_list = [] # List of all rules
 
-    rule_list = []
-    triggers = {}
+    # Structure of lists: Item_name: [rule_to_trigger1, rule_to_trigger2]
+    commmand_events = {} # All events registered by .received_command(...)
+    status_events = {} # All events registered by .changed(...)
+    timer_events = {}
 
-    commmand_events = {}
-
-    previous_item_state = {} # All items are "uninitialized" before receiving an update
-    status_events = {}
+    previous_item_state = {} # All item states are "" before receiving an update
 
     def __init__(self, client):
         self.client = client
@@ -43,15 +43,15 @@ class RuleController:
         self.mqtt_client.set_broker(broker)
         self.mqtt_client.set_port(port)
 
-        command_item_index = self.get_topic_index(commandPublishTopic, item_string)
-        state_item_index = self.get_topic_index(statePublishTopic, item_string)
+        command_item_index = self.__get_topic_index(commandPublishTopic, item_string)
+        state_item_index = self.__get_topic_index(statePublishTopic, item_string)
 
         state_subscription_topic = statePublishTopic.replace(item_string, "+")
         command_subscription_topic = commandPublishTopic.replace(item_string, "+")
         self.mqtt_client.subscribe_item_status(state_subscription_topic, state_item_index, self.item_changed)
         self.mqtt_client.subscribe_item_command(command_subscription_topic, command_item_index, self.item_received_command)
 
-    def get_topic_index(self, topic, item_string):
+    def __get_topic_index(self, topic, item_string):
         topic_segments = topic.split("/")
         counter = 0
         for segment in topic_segments:
@@ -65,13 +65,14 @@ class RuleController:
     def get_mqtt_client(self):
         return self.mqtt_client
 
-
+    # Called when an item received a command
     def item_received_command(self, item_name, command):
         print("Item " + item_name + " received command: " + command)
         for item_name_rule in self.commmand_events:
             if item_name == item_name_rule:
-                self.trigger_events(self.commmand_events[item_name], command)
+                self.__trigger_events(self.commmand_events[item_name], command)
 
+    # Called when an item changed
     def item_changed(self, item_name, new_state):
         if item_name not in self.previous_item_state:
             self.previous_item_state[item_name] = new_state
@@ -82,14 +83,14 @@ class RuleController:
         print("Item " + item_name + " updated status to: " + new_state)
         for item_name_rule in self.status_events:
             if item_name == item_name_rule:
-                self.trigger_events(self.commmand_events[item_name], new_state)
+                self.__trigger_events(self.status_events[item_name], new_state)
 
-    def trigger_events(self, event_list, command: str):
+    def __trigger_events(self, event_list, command: str):
         for event in event_list:
             if event.matches_condition(command):
-                self.execute_rule(event.get_rule())
+                self.__execute_rule(event.get_rule())
 
-    def register_rule(self, rule: Rule):
+    def __register_rule(self, rule: Rule):
         try:
             rule.setup(self.client, self)
             self.rule_list.append(rule)
@@ -99,40 +100,41 @@ class RuleController:
             else:
                 print("The registered rule is null")
 
-    # Add trigger to list
-    # Listformat:  itemname : [rule1, rule2...]
-    def add_triggers(self, rule, trigger_list):
-        for item in trigger_list:
-            if not item.name in self.triggers:
-                self.triggers[item.name] = []
-            self.triggers[item.name].append(rule)
-
     def run(self):
+        rules = [cls() for cls in Rule.__subclasses__()]
+        for rule in rules:
+            self.__register_rule(rule)
+            print("Rule '" + str(rule.__class__.__name__) + "' registered.")
+
         if self.mqtt_client is not None:
             self.mqtt_client.connect()
 
+    def run_forever(self, update_intervall = 60): # in seconds
+        self.run()
         while True:
-            for rule in self.rule_list:
-                pass
-                #self.execute_rule(rule)
-            print(".")
-            time.sleep(1)
+            time.sleep(update_intervall)
+            # TODO update items?
+
+    def __execute_rule(self, rule: Rule):
+        try:
+            if (rule.when()):
+                rule.then()
+                rule.test()
+        except Exception as e:
+            if rule is not None:
+                print("Execution of rule " + str(rule.__class__.__name__) + " threw an error: " + str(e))
+            else:
+                print("The registered rule is null")
 
 
-    def execute_rule(self, rule: Rule):
-        if (rule.when()):
-            rule.then()
-            rule.test()
-
-# Rule triggers
-    def receivedCommand(self, rule_to_trigger: Rule, item, command=""):
+# Rule triggers. Called by the Rule subclasses
+    def received_command(self, rule_to_trigger: Rule, item, command=""):
         condition = Condition(rule_to_trigger)
         condition.set_condition(command)
         if item.name not in self.commmand_events:
             self.commmand_events[item.name] = []
         self.commmand_events[item.name].append(condition)
 
-    # TODO make sure reveived state != previous state
     def changed(self, rule_to_trigger: Rule, item, status=""):
         condition = Condition(rule_to_trigger)
         condition.set_condition(status)
@@ -140,4 +142,15 @@ class RuleController:
             self.status_events[item.name] = []
         self.status_events[item.name].append(condition)
 
+    # Not sure if cron will be implemented or if a simpler approach should be used
 
+    # Defines the time the rule should be triggerd.
+    # Only triggers once, so make sure to recall this function if it should trigger periodically
+    def trigger_at(self, rule_to_trigger: Rule, time: datetime):
+        time_to_trigger = time.replace(tzinfo=None)
+        now = datetime.datetime.now()
+        delay = (time_to_trigger - now).total_seconds()
+        if (delay <= 0):
+            print("The trigger time for rule " + str(rule_to_trigger.__class__.__name__) + " is in the past!")
+        else:
+            threading.Timer(delay, self.__execute_rule(rule_to_trigger)).start()

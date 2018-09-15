@@ -1,5 +1,5 @@
 import datetime
-import pytz
+
 
 from openhab.rule import Rule
 
@@ -10,9 +10,10 @@ class TestRule(Rule):
         self.sunrise = openhab.get_item('Astro_Sunrise')
         self.is_holiday_switch = openhab.get_item('Holiday')
 
-        rc.receivedCommand(self, self.is_holiday_switch, "ON")
+        rc.received_command(self, self.is_holiday_switch, "ON")
         rc.changed(self, self.sunrise)
-        rc.receivedCommand(self, self.is_holiday_switch)
+        rc.trigger_at(self, self.sunrise.state)
+        rc.received_command(self, self.is_holiday_switch)
 
     # @Override
     def when(self):

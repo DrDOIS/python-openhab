@@ -18,16 +18,11 @@
 # along with python-openhab.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
-import datetime
-import openhab
-
 import openhab.mqtt_client
-from test_rule import TestRule
-from rule_light_bedroom import LightBedroomRule
+from rule_light_bedroom import * # import required to find the rule subclasses
+import test_rule # import required to find the rule subclasses
 
 base_url = 'http://192.168.10.6:8080/rest'
-
 
 openhab = openhab.OpenHAB(base_url)
 
@@ -37,7 +32,7 @@ items = openhab.fetch_all_items()
 # fetch all things
 things = openhab.fetch_all_things()
 
-# print all items which get data from things that are offline
+#print all items which get data from things that are offline
 # for item_name in items:
 #
 #     item_instance = items[item_name]
@@ -53,12 +48,10 @@ print("Testing ruleController...")
 # test rule controller
 ruco = openhab.get_rule_controller()
 
-statePublishTopic="home/eventBus/state/${item}"
-commandPublishTopic="home/eventBus/command/${item}"
+statePublishTopic="eventBus/state/${item}"
+commandPublishTopic="eventBus/command/${item}"
 ruco.enable_mqtt_client("192.168.10.6", 1883, statePublishTopic, commandPublishTopic)
 
 
-ruco.register_rule(TestRule())
-ruco.register_rule(LightBedroomRule())
 
-ruco.run()
+ruco.run_forever()
