@@ -19,7 +19,6 @@
 #
 
 import openhab.mqtt_client
-from rule_light_bedroom import * # import required to find the rule subclasses
 import test_rule # import required to find the rule subclasses
 
 base_url = 'http://192.168.10.6:8080/rest'

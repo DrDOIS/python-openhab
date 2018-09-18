@@ -21,15 +21,16 @@ def switch_light_off(brightness_dimmer):
 
 def switch_light_on(brightness_dimmer, color_temperature_dimmer, brightness_sensor):
     light_color = WARM
-    light_brightness = 0
+    light_brightness = 50
 
     if (is_during_night()):
         light_color = WARM
     else:
         light_color = COLD_WHITE
 
-    if (light_required(brightness_sensor)):
-        light_brightness = get_adequate_brightness(brightness_sensor)
+    if brightness_sensor is not None:
+        if (light_required(brightness_sensor)):
+            light_brightness = get_adequate_brightness(brightness_sensor)
 
     color_temperature_dimmer.command(light_color)
     brightness_dimmer.command(light_brightness)
@@ -48,6 +49,8 @@ def get_adequate_brightness(brightness_sensor):
 def mapFromTo(sensor_val, in_min, in_max, out_min, out_max):
    y= (sensor_val - in_min) / (in_max - in_min) * (out_max - out_min) + out_min
    return y
+
+
 
 class LightBedroomRule(Rule):
     # @Override

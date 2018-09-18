@@ -2,7 +2,8 @@
 import threading
 import time
 import datetime
-
+from os.path import dirname, basename, isfile
+import glob
 from openhab.rule import Rule
 import openhab.mqtt_client as mqtt
 
@@ -100,20 +101,29 @@ class RuleController:
             else:
                 print("The registered rule is null")
 
-    def run(self):
-        rules = [cls() for cls in Rule.__subclasses__()]
-        for rule in rules:
-            self.__register_rule(rule)
-            print("Rule '" + str(rule.__class__.__name__) + "' registered.")
-
-        if self.mqtt_client is not None:
-            self.mqtt_client.connect()
-
     def run_forever(self, update_intervall = 60): # in seconds
         self.run()
         while True:
             time.sleep(update_intervall)
             # TODO update items?
+
+    def run(self):
+        self.load_rules()
+
+        if self.mqtt_client is not None:
+            self.mqtt_client.connect()
+
+    def load_rules(self):
+        modules = glob.glob("rules/*.py")
+        __all__ = [basename(f)[:-3] for f in modules if isfile(f) and not f.endswith('__init__.py')]
+        for rule in __all__:
+            globals()[rule] = __import__("rules." + rule)
+
+        rules = [cls() for cls in Rule.__subclasses__()]
+        for rule in rules:
+            self.__register_rule(rule)
+            print("Rule '" + str(rule.__class__.__name__) + "' registered.")
+
 
     def __execute_rule(self, rule: Rule):
         try:
