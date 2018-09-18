@@ -13,13 +13,8 @@ Requirements
   - python :: dateutil
   - python :: requests
   - python :: typing
-  - TODO
-
-Note on openHAB1:
------------------
-
-The current version is focused on OpenHAB 2.x; OpenHAB 1.x might still work, though this is not tested. If you require
-older OpenHAB support, please use an older version of this library.
+  - python :: paho-mqtt
+Have a look in the Dockerfile for installation
 
 Example
 -------
